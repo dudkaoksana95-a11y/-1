@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивна дошка: Похідна</title>
+    <!-- Підключення Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Використання шрифту Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Стиль для вибраної відповіді */
+        .option-label:has(input:checked) {
+            background-color: #e0f2fe; /* light-blue-100 */
+            border-color: #0284c7; /* light-blue-600 */
+        }
+        /* Анімація для собаки */
+        @keyframes run {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+            100% { transform: translateY(0); }
+        }
+        #dog.running {
+            animation: run 0.3s infinite;
+        }
+        
+        /* Стиль для фінішної лінії */
+        #finishLine {
+            /*  */
+            font-size: 2.5rem; /* Налаштовуємо розмір emoji прапора */
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-3xl mx-auto">
+
+        <!-- Заголовок та Інформація -->
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Дошка завдань: Похідна</h1>
+                <p class="text-gray-600">10 клас - Практичні завдання</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="timer" class="text-xl font-bold text-red-600 bg-red-100 px-4 py-2 rounded-lg">20:00</div>
+                <div id="score-display" class="text-xl font-bold text-blue-600 bg-blue-100 px-4 py-2 rounded-lg">
+                    Бал: <span id="score">0</span> / 12
+                </div>
+            </div>
+        </div>
+
+        <!-- Поле для імені -->
+        <div class="mb-6">
+            <label for="studentName" class="block text-sm font-medium text-gray-700 mb-1">Введіть ваше ім'я:</label>
+            <input type="text" id="studentName" placeholder="Ваше ім'я" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <!-- "Бігова доріжка" для собаки -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Ваш прогрес:</h3>
+            <div id="track" class="relative w-full h-20 bg-green-100 rounded-lg border-4 border-dashed border-green-300 overflow-hidden">
+                <!-- Собака (Джек Расел) -->
+                <!--  -->
+                <div id="dog" classf="absolute text-5xl" style="left: 0; bottom: -5px; transition: left 1s ease-in-out;">🐶</div>
+                <!-- Фінішна лінія -->
+                <div id="finishLine" class="absolute text-5xl" style="right: 10px; bottom: -5px;">🏁</div>
+            </div>
+        </div>
+
+        <!-- Контейнер для завдань -->
+        <div id="task-container" class="my-8">
+            <h2 id="question-number" class="text-xl font-semibold text-gray-800 mb-2">Завдання 1:</h2>
+            <p id="question" class="text-lg text-gray-700 mb-6 min-h-[50px]">Завантаження запитання...</p>
+            
+            <!-- Варіанти відповідей -->
+            <div id="options-container" class="space-y-3">
+                <!-- Опції будуть додані динамічно -->
+            </div>
+        </div>
+
+        <!-- Зворотній зв'язок -->
+        <div id="feedback" class="mt-4 min-h-[50px] text-base font-medium p-4 rounded-lg"></div>
+
+        <!-- Кнопки управління -->
+        <div class="flex justify-between items-center mt-8">
+            <button id="doneBtn" class="bg-green-600 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-700 transition duration-200">
+                Готово
+            </button>
+            <button id="checkBtn" class="bg-blue-600 text-white py-2 px-6 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+                Перевірити
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальне вікно результатів -->
+    <div id="resultsModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Результати</h2>
+            <p id="finalMessage" class="text-xl text-gray-700 mb-6">Вітаємо!</p>
+            <p id="finalScore" class="text-2xl font-semibold text-blue-600 mb-6">Ваш бал: 0 з 12</p>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">Поради для повторення:</h3>
+            <ul id="studyAdvice" class="text-left list-disc list-inside text-gray-600 space-y-2 mb-8">
+                <!-- Поради будуть додані динамічно -->
+            </ul>
+            
+            <button onclick="location.reload()" class="bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 text-lg">
+                Спробувати ще раз
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Елементи ---
+            const studentNameInput = document.getElementById('studentName');
+            const timerEl = document.getElementById('timer');
+            const scoreEl = document.getElementById('score');
+            const dogEl = document.getElementById('dog');
+            const trackEl = document.getElementById('track');
+            const questionNumberEl = document.getElementById('question-number');
+            const questionEl = document.getElementById('question');
+            const optionsContainer = document.getElementById('options-container');
+            const feedbackEl = document.getElementById('feedback');
+            const checkBtn = document.getElementById('checkBtn');
+            const doneBtn = document.getElementById('doneBtn');
+            const resultsModal = document.getElementById('resultsModal');
+            const finalMessageEl = document.getElementById('finalMessage');
+            const finalScoreEl = document.getElementById('finalScore');
+            const studyAdviceEl = document.getElementById('studyAdvice');
+
+            // --- Стан гри ---
+            let allTasks = [];
+            let tasks = [];
+            let currentTaskIndex = 0;
+            let score = 0;
+            let timeLeft = 20 * 60; // 20 хвилин в секундах
+            let timerInterval = null;
+            let studentName = "";
+
+            // --- Банк Завдань ---
+            // Використовуємо innerHTML, тому <sup> безпечний
+            allTasks = [
+                {
+                    question: "Тіло рухається за законом s(t) = 2t<sup>3</sup> + t<sup>2</sup> - 4 (s - у метрах, t - у секундах). Знайдіть його миттєву швидкість у момент t = 2 с.",
+                    options: [
+                        "20 м/с",
+                        "24 м/с",
+                        "28 м/с",
+                        "16 м/с"
+                    ],
+                    correct: 2, // 28 м/с
+                    explanation: "Швидкість v(t) є похідною від шляху s(t). s'(t) = 6t<sup>2</sup> + 2t. Підставляємо t = 2: v(2) = 6(2)<sup>2</sup> + 2(2) = 6(4) + 4 = 24 + 4 = 28 м/с."
+                },
+                {
+                    question: "Вартість виробництва C (у гривнях) x одиниць товару описується функцією C(x) = 1500 + 30x + 0.1x<sup>2</sup>. Знайдіть граничні витрати (похідну C'(x)) при виробництві 50 одиниць товару.",
+                    options: [
+                        "30 грн",
+                        "40 грн",
+                        "50 грн",
+                        "10 грн"
+                    ],
+                    correct: 1, // 40 грн
+                    explanation: "Граничні витрати - це C'(x). C'(x) = 30 + 0.2x. При x = 50: C'(50) = 30 + 0.2(50) = 30 + 10 = 40 грн. Це означає, що виробництво 51-ї одиниці коштуватиме приблизно 40 грн."
+                },
+                {
+                    question: "Популяція бактерій зростає за законом P(t) = 100t<sup>2</sup> + 500t + 1000, де t - час у годинах. Яка швидкість росту популяції в момент t = 3 години?",
+                    options: [
+                        "1100 бактерій/год",
+                        "900 бактерій/год",
+                        "500 бактерій/год",
+                        "1400 бактерій/год"
+                    ],
+                    correct: 0, // 1100 бактерій/год
+                    explanation: "Швидкість росту - це похідна P'(t). P'(t) = 200t + 500. При t = 3: P'(3) = 200(3) + 500 = 600 + 500 = 1100 бактерій/год."
+                },
+                {
+                    question: "Прибуток P(x) від продажу x одиниць товару задано формулою P(x) = -x<sup>2</sup> + 200x - 5000. Скільки одиниць товару треба продати, щоб прибуток був максимальним?",
+                    options: [
+                        "50",
+                        "200",
+                        "100",
+                        "150"
+                    ],
+                    correct: 2, // 100
+                    explanation: "Для знаходження максимуму знаходимо похідну і прирівнюємо до нуля. P'(x) = -2x + 200. -2x + 200 = 0 => 2x = 200 => x = 100. Це точка максимуму."
+                },
+                {
+                    question: "М'яч кинули вертикально вгору. Його висота h (у метрах) над землею змінюється за законом h(t) = -5t<sup>2</sup> + 40t + 2. Яка максимальна висота, на яку підніметься м'яч?",
+                    options: [
+                        "82 м",
+                        "40 м",
+                        "42 м",
+                        "80 м"
+                    ],
+                    correct: 0, // 82 м
+                    explanation: "Спочатку знайдемо час підйому, прирівнявши похідну (швидкість) до нуля. h'(t) = -10t + 40. -10t + 40 = 0 => t = 4 с. Тепер підставимо цей час у функцію висоти: h(4) = -5(4)<sup>2</sup> + 40(4) + 2 = -5(16) + 160 + 2 = -80 + 160 + 2 = 82 м."
+                },
+                {
+                    question: "Температура тіла T (у °C) змінюється з часом t (у хвилинах) за законом T(t) = 0.2t<sup>2</sup> - 2t + 30. У який момент часу тіло почне нагріватися (тобто температура перестане спадати)?",
+                    options: [
+                        "t = 2 хв",
+                        "t = 10 хв",
+                        "t = 5 хв",
+                        "t = 0 хв"
+                    ],
+                    correct: 2, // t = 5 хв
+                    explanation: "Тіло почне нагріватися, коли його температура досягне мінімуму. T'(t) = 0.4t - 2. Прирівнюємо до нуля: 0.4t - 2 = 0 => 0.4t = 2 => t = 5 хв."
+                },
+                {
+                    question: "Кількість води в басейні V (у м<sup>3</sup>) змінюється за законом V(t) = 50 + 12t - t<sup>2</sup> (t - час у годинах). Коли басейн перестане наповнюватись і почне витікати (тобто V(t) досягне максимуму)?",
+                    options: [
+                        "t = 12 год",
+                        "t = 6 год",
+                        "t = 10 год",
+                        "t = 2 год"
+                    ],
+                    correct: 1, // t = 6 год
+                    explanation: "Шукаємо максимум функції V(t). V'(t) = 12 - 2t. 12 - 2t = 0 => 2t = 12 => t = 6 год. До 6 годин V'(t) > 0 (наповнюється), після 6 годин V'(t) < 0 (витікає)."
+                },
+                {
+                    question: "Фермер має 800 м паркану і хоче огородити прямокутне поле. Які розміри поля (довжина і ширина) дадуть максимальну площу?",
+                    options: [
+                        "300м x 100м",
+                        "250м x 150м",
+                        "200м x 200м",
+                        "350м x 50м"
+                    ],
+                    correct: 2, // 200м x 200м
+                    explanation: "Периметр P = 2(L+W) = 800 => L+W = 400 => L = 400-W. Площа A = L*W = (400-W)W = 400W - W<sup>2</sup>. A'(W) = 400 - 2W. 400 - 2W = 0 => W = 200. Тоді L = 400 - 200 = 200. Максимальну площу дає квадрат."
+                },
+                {
+                    question: "Тіло рухається прямолінійно за законом s(t) = t<sup>3</sup> - 6t<sup>2</sup> + 5 (s - у метрах, t - у секундах). Знайдіть прискорення тіла в момент t = 3 с.",
+                    options: [
+                        "6 м/с²",
+                        "0 м/с²",
+                        "-9 м/с²",
+                        "18 м/с²"
+                    ],
+                    correct: 0, // 6 м/с²
+                    explanation: "Швидкість v(t) = s'(t) = 3t<sup>2</sup> - 12t. Прискорення a(t) = v'(t) = s''(t) = 6t - 12. Підставляємо t = 3: a(3) = 6(3) - 12 = 18 - 12 = 6 м/с²."
+                },
+                {
+                    question: "Знайдіть кутовий коефіцієнт (тангенс кута нахилу) дотичної до графіка функції f(x) = x<sup>2</sup> - 5x в точці x<sub>0</sub> = 3.",
+                    options: [
+                        "-6",
+                        "1",
+                        "3",
+                        "-5"
+                    ],
+                    correct: 1, // 1
+                    explanation: "Кутовий коефіцієнт дотичної дорівнює значенню похідної в точці дотику. f'(x) = 2x - 5. f'(3) = 2(3) - 5 = 6 - 5 = 1."
+                },
+                {
+                    question: "На якому з проміжків функція y = x<sup>3</sup> - 3x<sup>2</sup> + 10 спадає?",
+                    options: [
+                        "(0; 2)",
+                        "(-∞; 0)",
+                        "(2; +∞)",
+                        "(-∞; 2)"
+                    ],
+                    correct: 0, // (0; 2)
+                    explanation: "Функція спадає, де y' < 0. y' = 3x<sup>2</sup> - 6x = 3x(x - 2). y' < 0, коли 3x(x - 2) < 0. Методом інтервалів отримуємо, що це проміжок (0; 2)."
+                },
+                {
+                    question: "Витрати на пальне для автомобіля, що рухається зі швидкістю v км/год, становлять C(v) = 0.05v<sup>2</sup> - 4v + 100 літрів/100км. При якій швидкості витрати пального будуть мінімальними?",
+                    options: [
+                        "60 км/год",
+                        "30 км/год",
+                        "50 км/год",
+                        "40 км/год"
+                    ],
+                    correct: 3, // 40 км/год
+                    explanation: "Шукаємо мінімум функції C(v). C'(v) = 0.1v - 4. 0.1v - 4 = 0 => 0.1v = 4 => v = 40 км/год."
+                },
+                {
+                    question: "Знайдіть точку мінімуму функції y = x<sup>2</sup> - 10x + 7.",
+                    options: [
+                        "x = -5",
+                        "x = 10",
+                        "x = 5",
+                        "x = 7"
+                    ],
+                    correct: 2, // x = 5
+                    explanation: "Точка мінімуму - це точка, де похідна дорівнює нулю. y' = 2x - 10. 2x - 10 = 0 => 2x = 10 => x = 5. Оскільки друга похідна y'' = 2 > 0, це точка мінімуму."
+                },
+                {
+                    question: "Тіло кинули вертикально вгору. Швидкість тіла v (у м/с) змінюється за законом v(t) = 30 - 10t. У який момент часу тіло зупиниться в найвищій точці?",
+                    options: [
+                        "t = 10 с",
+                        "t = 30 с",
+                        "t = 1 с",
+                        "t = 3 с"
+                    ],
+                    correct: 3, // t = 3 с
+                    explanation: "Тіло зупиниться, коли його швидкість v(t) дорівнюватиме нулю. 30 - 10t = 0 => 10t = 30 => t = 3 с."
+                },
+                {
+                    question: "Виробник продає x телевізорів за ціною p(x) = 300 - 0.5x. Загальний дохід R(x) = x * p(x) = 300x - 0.5x<sup>2</sup>. Знайдіть граничний дохід R'(x).",
+                    options: [
+                        "R'(x) = 300 - x",
+                        "R'(x) = 300",
+                        "R'(x) = 300 - 0.5x",
+                        "R'(x) = -x"
+                    ],
+                    correct: 0, // R'(x) = 300 - x
+                    explanation: "Граничний дохід - це похідна від загального доходу R(x) = 300x - 0.5x<sup>2</sup>. R'(x) = 300 - 0.5 * (2x) = 300 - x."
+                }
+            ];
+
+            // --- Функції ---
+
+            // Перемішування масиву (Fisher-Yates)
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            // Запуск таймера
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timerEl.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        showResults();
+                    }
+                }, 1000);
+            }
+
+            // Завантаження завдання
+            function loadTask() {
+                if (currentTaskIndex < tasks.length) {
+                    const task = tasks[currentTaskIndex];
+                    questionNumberEl.textContent = `Завдання ${currentTaskIndex + 1}:`;
+                    questionEl.innerHTML = task.question; // Використовуємо innerHTML для <sup>
+                    
+                    optionsContainer.innerHTML = ''; // Очищуємо попередні варіанти
+                    task.options.forEach((option, index) => {
+                        optionsContainer.innerHTML += `
+                            <label class="option-label flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition duration-200">
+                                <input type="radio" name="option" value="${index}" class="mr-3 text-blue-600 focus:ring-blue-500">
+                                <span class="text-gray-700">${option}</span>
+                            </label>
+                        `;
+                    });
+
+                    feedbackEl.innerHTML = '';
+                    feedbackEl.className = 'mt-4 min-h-[50px] text-base font-medium p-4 rounded-lg';
+                    checkBtn.disabled = false;
+                    checkBtn.textContent = 'Перевірити';
+                } else {
+                    // Всі завдання виконано
+                    showResults();
+                }
+            }
+
+            // Перевірка відповіді
+            function checkAnswer() {
+                const selectedOption = document.querySelector('input[name="option"]:checked');
+                if (!selectedOption) {
+                    feedbackEl.textContent = 'Будь ласка, оберіть варіант відповіді.';
+                    feedbackEl.className += ' bg-yellow-100 text-yellow-800';
+                    return;
+                }
+
+                checkBtn.disabled = true;
+                const answerIndex = parseInt(selectedOption.value);
+                const correctIndex = tasks[currentTaskIndex].correct;
+
+                if (answerIndex === correctIndex) {
+                    // Правильна відповідь
+                    score++;
+                    scoreEl.textContent = score;
+                    feedbackEl.innerHTML = '✅ <strong>Правильно!</strong>';
+                    feedbackEl.className += ' bg-green-100 text-green-800';
+                    moveDog(true); // true = правильна відповідь
+                } else {
+                    // Неправильна відповідь
+                    feedbackEl.innerHTML = `❌ <strong>Неправильно.</strong> <br> ${tasks[currentTaskIndex].explanation}`;
+                    feedbackEl.className += ' bg-red-100 text-red-800';
+                    moveDog(false); // false = неправильна відповідь
+                }
+
+                // Перехід до наступного завдання
+                currentTaskIndex++;
+                setTimeout(() => {
+                    loadTask();
+                }, 2500); // Затримка, щоб учень встиг прочитати пояснення
+            }
+
+            // Рух собаки
+            function moveDog(isCorrect) {
+                if(isCorrect) {
+                    dogEl.classList.add('running');
+                    // Собака рухається на (100 / 12)% за кожну правильну відповідь
+                    const progressPercentage = (score / tasks.length) * 100;
+                    // 90% - це максимальна позиція зліва, щоб 🏁 був видний
+                    const dogPosition = Math.min(progressPercentage * 0.9, 90); 
+                    dogEl.style.left = `${dogPosition}%`;
+
+                    // Зупинити анімацію бігу
+                    setTimeout(() => dogEl.classList.remove('running'), 1000); // Тривалість анімації переходу
+                }
+                // Якщо відповідь неправильна, собака не рухається
+            }
+
+            // Показ результатів
+            function showResults() {
+                clearInterval(timerInterval);
+                checkBtn.disabled = true;
+                doneBtn.disabled = true;
+
+                studentName = studentNameInput.value || "Учень";
+                finalMessageEl.textContent = `Вітаємо, ${studentName}!`;
+                finalScoreEl.textContent = `Ваш бал: ${score} з ${tasks.length}`;
+
+                // Генерація порад
+                studyAdviceEl.innerHTML = '';
+                if (score < 6) {
+                    studyAdviceEl.innerHTML = `
+                        <li>Повторіть базові правила знаходження похідних (степенева функція, сума).</li>
+                        <li>Зверніть увагу на фізичний зміст похідної (швидкість, прискорення).</li>
+                        <li>Попрактикуйтесь у знаходженні точок екстремуму.</li>
+                    `;
+                } else if (score < 10) {
+                    studyAdviceEl.innerHTML = `
+                        <li>Хороший результат! Повторіть геометричний зміст похідної (дотична).</li>
+                        <li>Розв'яжіть більше задач на знаходження найбільшого/найменшого значення функції на проміжку.</li>
+                    `;
+                } else {
+                    studyAdviceEl.innerHTML = `
+                        <li>Відмінно! Ви добре засвоїли тему.</li>
+                        <li>Спробуйте розв'язати складніші прикладні задачі на оптимізацію.</li>
+                    `;
+                }
+
+                resultsModal.classList.remove('hidden');
+            }
+
+            // --- Ініціалізація ---
+            function init() {
+                tasks = shuffleArray(allTasks).slice(0, 12); // Вибираємо 12 випадкових завдань
+                startTimer();
+                loadTask();
+
+                checkBtn.addEventListener('click', checkAnswer);
+                doneBtn.addEventListener('click', showResults);
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
